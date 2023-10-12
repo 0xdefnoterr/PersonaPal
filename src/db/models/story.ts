@@ -20,4 +20,4 @@ const story_schema = new Schema<Story>({
     updated_at: Date
 })
 
-export const story_model = model<Story>('stories', story_schema);
+export {Story, story_schema};
