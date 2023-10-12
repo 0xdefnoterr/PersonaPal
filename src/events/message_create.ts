@@ -1,7 +1,7 @@
 import { config } from "../config";
 import { Events, Message, Client, Interaction, EmbedBuilder, PermissionsString } from "discord.js";
 import { Command } from "../commands/commands";
-import { Cooldown, cd_model } from "../db/models/cooldown";
+import { cd_model, Cooldown } from "../db/models/cooldown";
 
 const levenshtein_distance = (a:string, b:string) => {
 	const c = a.length + 1;
@@ -64,27 +64,17 @@ module.exports = {
 
 		}
 
-		const cd = await cd_model.findOne({user_id: message.author.id, guild_id: message.guild?.id});
+		const cd = await cd_model.findOne({command: command.name, user_id: message.author.id, guild_id: message.guild?.id});
 
 		if (cd) {
+			const time_diff = Date.now() - cd.time.getTime();
+			if (time_diff < (command.cooldown ?? config.default_cooldown) * 1000) {
+				const time_left = ((command.cooldown ?? config.default_cooldown) * 1000 - time_diff) / 1000;
 
-			let current_command: {command: string, time: Date};
-			cd.get("commands").forEach((command: {command: string, time: Date}) => {
-				if (command.command === command_name) {
-					current_command = command;
-				}
-			});
-
-			const now = Date.now();
-			const time = current_command.time.getTime();
-			const cooldown = command.cooldown ?? client.config.default_cooldown;
-			const remaining_time = Math.floor((cooldown * 1000 - (now - time)) / 1000);
-
-			if (remaining_time > 0) {
 				const embed = new EmbedBuilder()
 					.setAuthor({name: client.user?.username ?? "", iconURL: client.user?.avatarURL() ?? undefined})
 					.setTitle("Cooldown")
-					.setDescription(`You need to wait ${remaining_time} seconds before using ${current_command.command} again`)
+					.setDescription(`Please wait ${time_left.toFixed(1)} more seconds before using ${command.name}`)
 					.setColor(config.hex_colors.warning)
 					.setTimestamp(new Date())
 					.setFooter({text: message.author.tag, iconURL: message.author.avatarURL() ?? undefined})
@@ -136,7 +126,8 @@ module.exports = {
 			const now = Date.now();
 			await command.run(client, message, args);
 
-			await cd_model.findOneAndUpdate({user_id: message.author.id, guild_id: message.guild?.id}, {$addToSet: {commands: {command: command.name, time: new Date(now)}}}, {upsert: true});
+			await cd_model.findOneAndUpdate({command: command.name, user_id: message.author.id, guild_id: message.guild?.id}, {time: new Date(now)}, {upsert: true, new: true});
+
 			console.log(`Command ${command.name} executed by ${message.author.tag}`)
 		} catch (error) {
 			console.error(error);

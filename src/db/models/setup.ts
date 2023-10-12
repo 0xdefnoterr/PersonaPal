@@ -3,6 +3,7 @@ import { Persona, persona_model } from './persona';
 import { Story, story_schema } from './story';
 
 interface Guild_S {
+    collab_link: string;
     guild_id: string;
     prefix: string;
     persona: Persona;
@@ -12,6 +13,7 @@ interface Guild_S {
 }
 
 interface DirectMessage_S {
+    collab_link: string;
     user_id: string;
     persona: Persona;
     story: Story;
@@ -20,6 +22,7 @@ interface DirectMessage_S {
 }
 
 const guild_schema = new Schema<Guild_S>({
+    collab_link: {type: String, required: true},
     guild_id: {type: String, required: true},
     prefix: {type: String, required: true},
     persona: {type: persona_model.schema, required: true},
@@ -29,6 +32,7 @@ const guild_schema = new Schema<Guild_S>({
 });
 
 const direct_message_schema = new Schema<DirectMessage_S>({
+    collab_link: {type: String, required: true},
     user_id: {type: String, required: true},
     persona: {type: persona_model.schema, required: true},
     story: {type: story_schema, required: true},
