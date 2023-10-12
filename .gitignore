@@ -1,0 +1,5 @@
+#ignore dist and node_modules
+
+dist/
+node_modules/
+src/.env
