@@ -1,5 +1,5 @@
 import { Command } from "../commands";
-import { ChatInputCommandInteraction, Client, Message, EmbedBuilder } from "discord.js";
+import { ChatInputCommandInteraction, Client, Message, EmbedBuilder, CommandInteractionOptionResolver } from "discord.js";
 
 
 
@@ -51,22 +51,22 @@ module.exports = {
 
         const embeded_message = await message.reply({ embeds: [embed] });
 
-        const filter = (m: Message) => m.author.id === message.author.id;
+        const filter = (m: Message) => {
+            return m.author.id === message.author.id;
+        };
 
         // use awaitMessages
-        try {
-            let promise = await message.channel.awaitMessages({filter, max: 1, time: 10, errors: ["time"]})
+        message.channel.awaitMessages({filter, max: 1, time: 30000, errors: ["time"]})
+            .then(collected => {
+                console.log("zebi")
+            })
+            .catch(collected => {
+                console.log("didn't answer in time")
+            })
 
-            let response = promise.first();
-
-            if (response?.content.toLowerCase() === "cancel") {
-                return await message.reply("Setup cancelled")
-
-                
-            }
-        } catch (error) {
-            console.log(error)
-        }
+            //if (response?.content.toLowerCase() === "cancel") {
+               // return await message.reply("Setup cancelled")
+            //}
 
 
     }

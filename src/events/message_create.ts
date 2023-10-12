@@ -60,7 +60,7 @@ module.exports = {
 				.setTimestamp(new Date())
 				.setFooter({text: message.author.tag, iconURL: message.author.avatarURL() ?? undefined})
 
-			return message.reply({ embeds: [embed] });
+			return await message.reply({ embeds: [embed] });
 
 		}
 
@@ -79,7 +79,7 @@ module.exports = {
 					.setTimestamp(new Date())
 					.setFooter({text: message.author.tag, iconURL: message.author.avatarURL() ?? undefined})
 
-				return message.reply({ embeds: [embed] });
+				return await message.reply({ embeds: [embed] });
 			}
 		}
 
