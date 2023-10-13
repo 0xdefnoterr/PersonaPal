@@ -2,7 +2,7 @@ import { Command } from "../commands";
 import { ChatInputCommandInteraction, Client, Message, EmbedBuilder, CommandInteractionOptionResolver, PermissionsBitField } from "discord.js";
 import { fetch_api } from "../../api/api";
 
-import { Guild_S, guild_model } from "../../db/models/setup";
+import { guild_model } from "../../db/models/setup";
 
 enum SetupReturn {
     Success,
@@ -10,14 +10,52 @@ enum SetupReturn {
     Failed
 }
 
+const update_persona = async (guild_id: string, new_value: any, key: string, embeded_message: Message) => {
+    let current_persona = await guild_model.findOne({guild_id: guild_id}).select("persona");
+    const new_embed = new EmbedBuilder(embeded_message.embeds[0])
+        .setFields([
+            {name: `Current Persona's ${key}`, value: current_persona?.persona?.[key]},
+            {name: `New Persona ${key}`, value: new_value}
+        ])
+        .setTimestamp(new Date());
+
+    try {
+        await guild_model.findOneAndUpdate({guild_id: guild_id}, {persona: {[key]: new_value}}, {upsert: true});
+        await embeded_message.edit({embeds: [new_embed]})
+        return [SetupReturn.Success, `Successfully updated persona's ${key}`]
+    } catch (error) {
+        return [SetupReturn.Failed, `Failed to update persona's ${key}`]
+    }
+}
+
+const show_current_persona = async (guild_id: string, embeded_message: Message) => {
+    let current_persona = await guild_model.findOne({guild_id: guild_id}).select("persona");
+    const new_ebmed = new EmbedBuilder(embeded_message.embeds[0])
+        .setTimestamp(new Date())
+        .setFields([
+            {name: "Persona's name", value: current_persona?.persona?.name ?? "Not one yet."},
+            {name: "Persona's personality", value: current_persona?.persona?.personality.substring(0, 100) ?? "Not one yet."},
+            {name: "Persona's description", value: current_persona?.persona?.description.substring(0, 100) ?? "Not one yet."}
+        ])
+
+    try {
+        await embeded_message.edit({embeds: [new_ebmed]})
+    } catch (error) {
+        return;
+    }
+}
+
 const setup_pages = [
     {
         title: "Step 1: Import the google collab link",
         description: "Reply with the google collab link [google collab](https://colab.research.google.com/github/KoboldAI/KoboldAI-Client/blob/main/colab/TPU.ipynb#scrollTo=ZIL7itnNaw5V) that you get when executing.",
-        run: async (client: Client, message: Message, old_args: string[], embeded_message: Message) => {
+        on: async(client: Client, embedded_message: Message) => {
+
+        },
+        after: async (client: Client, message: Message, old_args: string[], embeded_message: Message) => {
             let collab_link = message.content.startsWith("https://" || "http://") ? message.content : message.attachments.first()?.url;
             if (!collab_link) {
-                return [SetupReturn.Failed, "No collab link provided"]
+                return [SetupReturn.Failed, "Failed to get a link"]
             }
             let res_json = await fetch_api(collab_link, "version");
             if (res_json.error) {
@@ -38,9 +76,27 @@ const setup_pages = [
         }
     },
     {
-        title: "Step 2: Define your character's personality or use a pre-made character", 
+        title: "Step 2: What is your character's name?",
+        description: "Give your character's name",
+        after: async (client: Client, message: Message, args: string[], embeded_message: Message) => {
+            try {
+                let current_persona = await guild_model.findOne({guild_id: message.guild?.id}).select("persona");
+                let new_name = message.content;
+                console.log(new_name);
+            } catch (error) {
+                console.log(error)
+            }
+            
+            
+            //await embeded_message.edit({embeds: [new_embed]});
+            //await guild_model.findOneAndUpdate({guild_id: message.guild?.id}, {persona: {name: new_name}}, {upsert: true});
+            return [SetupReturn.Success, "Successfully set persona's name"]
+        }
+    },
+    {
+        title: "Step 3: Define your character's personality or use a pre-made character", 
         description: "What is your character's persona ([character(\"Mistress Velvet\")\n{\nSpecies(\"Human\")..]) \n You can copy paste the char_persona from a [character json](https://chub.ai)\n If you would like to keep the current persona, you can react with ➡️",
-        run: async (client: Client, message: Message, args: string[], embeded_message: Message) => {
+        after: async (client: Client, message: Message, args: string[], embeded_message: Message) => {
             let current_persona = await guild_model.findOne({guild_id: message.guild?.id}).select("persona");
             let persona_personality = message.content;
 
@@ -55,8 +111,28 @@ const setup_pages = [
             await embeded_message.edit({embeds: [new_embed]});
             return [SetupReturn.Success, "Successfully imported persona"]
             
+        },
+    },
+    {
+        title: "Step 4: Dialogue example",
+        description: "Send your persona's dialogue example from the json",
+        run: async (client: Client, message: Message, args: string[], embeded_message: Message) => {
+            let current_persona = await guild_model.findOne({guild_id: message.guild?.id}).select("persona");
+
+            let persona_example = message.content;
+
+            const new_embed = new EmbedBuilder(embeded_message.embeds[0])
+                .setFields([
+                   {name: "Current persona (truncated)", value: current_persona?.persona?.description?.substring(0, 400) ?? "Setting with new content will be updated after setup is finished"},
+                   {name: "New persona (truncated)", value: persona_example.substring(0, 400)}
+                ])
+                .setTimestamp(new Date());
+
+            await embeded_message.edit({embeds: [new_embed]});
+            await guild_model.findOneAndUpdate({guild_id: message.guild?.id}, {persona: {description: persona_example}}, {upsert: true});
+            return [SetupReturn.Success, "Successfully set up dialogue examples"]
         }
-    }
+    },
 ]
 
 module.exports = {
@@ -132,7 +208,8 @@ module.exports = {
 
         collector.on("collect", async (m: Message) => {
 
-            let [ret_value, description] = await setup_pages[current_page].run(client, m, args, embeded_message);
+            await setup_pages[current_page]?.on(client, embeded_message);
+            let [ret_value, description] = await setup_pages[current_page]?.after(client, m, args, embeded_message);
 
             if (ret_value === SetupReturn.Success) {
                 current_page++;
