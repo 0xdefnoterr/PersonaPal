@@ -2,7 +2,7 @@ import * as glob from 'glob';
 import { config } from './config';
 import { Event } from './events/events';
 import { Command } from './commands/commands';
-import { ActivityType, Client, Collection, GatewayIntentBits, REST, Routes } from 'discord.js';
+import { ActivityType, Client, Collection, EmbedBuilder, GatewayIntentBits, REST, Routes } from 'discord.js';
 import { connect } from './db/connect';
 
 import path = require('path');
@@ -14,8 +14,12 @@ declare module 'discord.js' {
 		setups: Collection<string, Object>;
 		config: typeof config;
 		db: Mongoose;
+		embeds: {
+			error: (message: string) => EmbedBuilder;
+		}
 	}
 }
+
 
 const client = new Client({
 	intents: [
@@ -36,15 +40,24 @@ const client = new Client({
 		}]
 	}
 });
-
-
-
+client.config = config;
 client.setups = new Collection<string, Object>();
 client.commands = new Collection<string, Object>();
 
+client.embeds = {
+	error: (message: string) => {
+		return new EmbedBuilder()
+			.setTitle("Error")
+			.setDescription(message)
+			.setColor(config.hex_colors.error)
+			.setTimestamp(new Date())
+			.setFooter({ text: client.user?.username ?? "", iconURL: client.user?.avatarURL() ?? undefined })
+	}
+}
+
+
 const slash_commands = []
 
-// Load commands
 const command_files = glob.sync(__dirname+'/commands/**/*.js')
 for (const command_file of command_files) {
 	const command: Command = require(path.resolve(command_file))
@@ -73,9 +86,6 @@ for (const event_file of event_files) {
 	}
 }
 
-client.config = config;
-client.login(config.token);
-
 const rest = new REST().setToken(config.token);
 (async () => {
 	try {
@@ -92,3 +102,6 @@ const rest = new REST().setToken(config.token);
 		console.error(error);
 	}
 })();
+
+client.login(config.token);
+

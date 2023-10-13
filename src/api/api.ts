@@ -2,9 +2,9 @@
 // we will use fetch, should we use classes or functions?
 
 
-let PREFIX = "/api/v1/"
+const PREFIX = "/api/v1/"
 
-let endpoints = {
+const endpoints = {
     "version": {type: "GET", url: PREFIX + "info/version"},
     "model": {type: "GET", url: PREFIX + "model"},
     "generate": {type: "POST", url: PREFIX + "generate"},
@@ -13,7 +13,7 @@ let endpoints = {
 }
 
 
-let fetch_api = async (base_url: string, endpoint: string, body?: any) => {
+const fetch_api = async (base_url: string, endpoint: string, body?: any) => {
     let url = base_url + endpoints[endpoint].url;
     let type = endpoints[endpoint].type;
 
@@ -26,9 +26,8 @@ let fetch_api = async (base_url: string, endpoint: string, body?: any) => {
     if (body) options.body = JSON.stringify(body);
 
     try {
-        let res = await fetch(url, options);
-        let json = await res.json();
-        return json;
+        const res = await fetch(url, options);
+        return await res.json();
     } catch (error) {
         return {error: error};
     }

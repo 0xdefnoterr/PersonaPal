@@ -7,7 +7,7 @@ interface Guild_S {
     guild_id: string;
     prefix: string;
     persona: Persona;
-    stories: Story[];
+    story: Story;
     created_at: Date;
     updated_at: Date;
 }
@@ -26,7 +26,7 @@ const guild_schema = new Schema<Guild_S>({
     guild_id: {type: String, required: true},
     prefix: {type: String, required: true},
     persona: {type: persona_model.schema, required: true},
-    stories: [story_schema],
+    story: story_schema,
     created_at: Date,
     updated_at: Date
 });

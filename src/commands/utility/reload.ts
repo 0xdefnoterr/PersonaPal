@@ -31,4 +31,4 @@ module.exports = {
             message.reply(`Error while reloading ${command.name}`);
         }
     }
-}
+} as Command;

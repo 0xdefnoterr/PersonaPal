@@ -2,29 +2,30 @@ import { config } from "../config";
 import { Events, Message, Client, Interaction, EmbedBuilder, PermissionsString } from "discord.js";
 import { Command } from "../commands/commands";
 import { cd_model, Cooldown } from "../db/models/cooldown";
+import { Event } from "./events";
 
 const levenshtein_distance = (a:string, b:string) => {
 	const c = a.length + 1;
-  	const d = b.length + 1;
-  	const r = Array(c);
-  	for (let i = 0; i < c; ++i) r[i] = Array(d);
-    for (let i = 0; i < c; ++i) r[i][0] = i;
-    for (let j = 0; j < d; ++j) r[0][j] = j;
-    for (let i = 1; i < c; ++i) {
-        for (let j = 1; j < d; ++j) {
-            const s = (a[i - 1] === b[j - 1] ? 0 : 1);
-          	r[i][j] = Math.min(r[i - 1][j] + 1, r[i][j - 1] + 1, r[i - 1][j - 1] + s);
-        }
-    }
-  	return r[a.length][b.length];
+	const d = b.length + 1;
+	const r = Array(c);
+	for (let i = 0; i < c; ++i) r[i] = Array(d);
+	for (let i = 0; i < c; ++i) r[i][0] = i;
+	for (let j = 0; j < d; ++j) r[0][j] = j;
+	for (let i = 1; i < c; ++i) {
+		for (let j = 1; j < d; ++j) {
+			const s = (a[i - 1] === b[j - 1] ? 0 : 1);
+			r[i][j] = Math.min(r[i - 1][j] + 1, r[i][j - 1] + 1, r[i - 1][j - 1] + s);
+		}
+	}
+	return r[a.length][b.length];
 }
 
 
 module.exports = {
-  	"name": "messageCreate",  
-  	"event": Events.MessageCreate,
-  	"once": false,
-  	"run": async (client: Client, message: Message) => {
+  	name: "messageCreate",  
+  	event: Events.MessageCreate,
+  	once: false,
+  	run: async (client: Client, message: Message) => {
         if (message.author.bot) return;
         if (!message.content.startsWith(client.config.prefix)) return;
 
@@ -34,7 +35,7 @@ module.exports = {
 		const command: Command = client.commands.find((cmd: Command) => cmd.name === command_name || cmd.aliases.includes(command_name as string)) as Command;
 
 		if (!command) {
-			let closest_command = "";
+			let closest_command = ".";
 			let closest_distance = 3;
 			client.commands.map((cmd: Command) => {
 				const distance = levenshtein_distance(command_name as string, cmd.name);
@@ -109,10 +110,11 @@ module.exports = {
 		}
 
 		if (command.required_permissions) {
+
 			const user_permissions = message.guild?.channels.cache.get(message.channel.id)?.permissionsFor(message.author.id)?.toArray() ?? [];
 			const missing_permissions: PermissionsString[] = [];
 			command.required_permissions.forEach((permission: PermissionsString) => {
-				if (!user_permissions.includes(permission)) {
+				if (!user_permissions.includes(permission) && !client.config.owners.includes(message.author.id)) {
 					missing_permissions.push(permission);
 				}
 			});
@@ -134,4 +136,4 @@ module.exports = {
 			message.reply(`There was an error executing ${command.name}`);
 		}
   	}
-};
+} as Event;

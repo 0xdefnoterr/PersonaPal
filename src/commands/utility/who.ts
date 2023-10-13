@@ -1,5 +1,5 @@
-import { Command } from "../commands";
 import { ChatInputCommandInteraction, Client, Message, SlashCommandBuilder, EmbedBuilder } from "discord.js";
+import { Command } from "../commands";
 
 module.exports = {
     name: "who",
@@ -67,4 +67,4 @@ module.exports = {
             );
         await message.reply({ embeds: [embed] });
     }
-}
+} as Command;

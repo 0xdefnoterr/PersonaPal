@@ -1,8 +1,8 @@
-import { Command } from "../commands";
 import { ChatInputCommandInteraction, Client, Message, EmbedBuilder, CommandInteractionOptionResolver, PermissionsBitField } from "discord.js";
 import { fetch_api } from "../../api/api";
 
 import { guild_model } from "../../db/models/setup";
+import { Command } from "../commands";
 
 enum SetupReturn {
     Success,
@@ -10,20 +10,11 @@ enum SetupReturn {
     Failed
 }
 
+const DEL_TIMEOUT = 5000;
+
 const update_persona = async (guild_id: string, new_value: any, key: string, embeded_message: Message) => {
-    let guild = await guild_model.findOne({guild_id: guild_id});
-    const new_embed = new EmbedBuilder(embeded_message.embeds[1])
-        .setFields([
-            {name: `Current Character's ${key}`, value: guild?.persona?.[key] ?? "Not one yet."},
-            {name: `New Character's ${key}`, value: new_value?.substring(0, 100) ?? "Erm..."}
-        ])
-        .setTimestamp(new Date());
-    
     try {
-        await guild_model.findOneAndUpdate({guild_id: guild_id}, 
-            {$set: {[`persona.${key}`]: new_value}}, 
-            {upsert: true});
-        await embeded_message.edit({embeds: [embeded_message.embeds[0], new_embed]})
+        await guild_model.findOneAndUpdate({guild_id: guild_id}, {[`persona.${key}`]: new_value}, {upsert: true})
         return [SetupReturn.Success, `Successfully updated persona's ${key}`]
     } catch (error) {
         return [SetupReturn.Failed, `Failed to update persona's ${key}`]
@@ -42,9 +33,9 @@ const show_current_persona = async (guild_id: string, embeded_message: Message, 
         .setFields([
             {name: "Collab link", value: guild?.collab_link ?? "Not one yet."},
             {name: "Character's name", value: current_persona?.name ?? "Not one yet."},
-            {name: "Character's personality", value: current_persona?.personality?.substring(0, 100) ?? "Not one yet."},
-            {name: "Character's description", value: current_persona?.dialogue?.substring(0, 100) ?? "Not one yet."},
-            {name: "Character's greeting", value: current_persona?.greeting?.substring(0, 100) ?? "Not one yet."}
+            {name: "Character's personality", value: current_persona?.personality?.substring(0, 50) ?? "Not one yet."},
+            {name: "Character's description", value: current_persona?.dialogue?.substring(0, 50) ?? "Not one yet."},
+            {name: "Character's greeting", value: current_persona?.greeting?.substring(0, 50) ?? "Not one yet."}
         ])
 
     try {
@@ -89,13 +80,7 @@ const setup_pages = [
             await show_current_persona(embedded_message.guild?.id, embedded_message);
         },
         after: async (client: Client, message: Message, args: string[], embeded_message: Message) => {
-            try {
-                let new_name = message.content;
-                await update_persona(message.guild?.id, new_name, "name", embeded_message);
-            } catch (error) {
-                console.log(error)
-            }
-            return [SetupReturn.Success, "Successfully set persona's name"]
+            return await update_persona(message.guild?.id, message.content, "name", embeded_message);
         }
     },
     {
@@ -115,7 +100,15 @@ const setup_pages = [
             await show_current_persona(embedded_message.guild?.id, embedded_message);
         },
         after: async (client: Client, message: Message, args: string[], embeded_message: Message) => {
-            return await update_persona(message.guild?.id, message.content, "dialogue", embeded_message);
+            // add a message at the very beginning of the dialogue
+            let guild = await guild_model.findOne({guild_id: message.guild?.id});
+
+            // let content = `YOU ARE NOW "${guild?.persona?.name ?? ""}", DO NOT BREAK CHARACTER\n\n ${message.content}`;
+
+            let content = message.content;
+
+            content = content.replaceAll("{{char}}", guild?.persona?.name ?? "");
+            return await update_persona(message.guild?.id, content, "dialogue", embeded_message);
         }
     },
     {
@@ -125,6 +118,9 @@ const setup_pages = [
             await show_current_persona(embedded_message.guild?.id, embedded_message);
         },
         after: async (client: Client, message: Message, args: string[], embeded_message: Message) => {
+            setTimeout(() => {
+                message.deletable && message.delete();
+            }, DEL_TIMEOUT);
             return await update_persona(message.guild?.id, message.content, "greeting", embeded_message);
         }
     },
@@ -137,6 +133,7 @@ module.exports = {
     usage: "setup",
     aliases: ["config"],
     bot_permisisons: ["SendMessages", "EmbedLinks", "ManageMessages", "AddReactions"],
+    required_permissions: ["Administrator"],
     owner_only: false,
     enabled: true,
     type: "hybrid",
@@ -252,4 +249,4 @@ module.exports = {
             }
         });
     }
-}
+} as Command;

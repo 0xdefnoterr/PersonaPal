@@ -6,8 +6,8 @@ const ready_event: Event = {
   	"event": Events.ClientReady,
   	"once": true,
   	"run": async (client: Client) => {
-    	console.log(`Logged in as ${client.user?.tag}, ready to serve ${client.guilds.cache.size} guilds`);
+		console.log(`Logged in as ${client.user?.tag}, ready to serve ${client.guilds.cache.size} guilds`);
  	}
 };
 
-module.exports = ready_event;
+module.exports = ready_event as Event;

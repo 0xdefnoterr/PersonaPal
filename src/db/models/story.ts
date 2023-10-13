@@ -3,7 +3,7 @@ import { Persona, persona_model } from './persona';
 
 
 interface Story {
-    story: [{id: string, body: string}];
+    conversation: string;
     channel_id: string;
     guild_id: string;
     persona: Persona;
@@ -12,7 +12,7 @@ interface Story {
 }
 
 const story_schema = new Schema<Story>({
-    story: [{id: {type: String, required: true}, body: String}],
+    conversation: String,
     channel_id: String,
     guild_id: String,
     persona: persona_model.schema,
