@@ -5,7 +5,8 @@ export interface Persona {
     guild_id: string;
     tags: string[];
     personality: string;
-    description: string;
+    greeting: string;
+    dialogue: string;
     avatar_url: string;
 }
 
@@ -13,8 +14,9 @@ const persona_schema = new Schema<Persona>({
     name: {type: String, required: true},
     guild_id: String,
     tags: [String],
+    greeting: String,
     personality: String,
-    description: String,
+    dialogue: String,
     avatar_url: String
 });
 
