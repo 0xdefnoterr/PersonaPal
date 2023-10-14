@@ -54,7 +54,7 @@ module.exports = {
         const persona = guild_info.persona;
 
 
-        const stop_sequence = [`${message.author.tag}`,"\n\n", ".", "?", "!", ":"]
+        const stop_sequence = [`${persona.name}:`, `${message.author.tag}:`, `${persona.name}: `, `${message.author.tag}: `, "\n\n"]
 
         const prompt = `${persona.personality}\n${persona.dialogue}\n${last_story}\n${message.author.tag}: ${message_content}\n${persona.name}: `;
 
@@ -72,7 +72,8 @@ module.exports = {
             return message.reply({embeds : [client.embeds.error(response.error)]});
         else {
             let generated_text = response.results?.[0]?.text ?? "";
-            generated_text = generated_text.replaceAll(`\\n${message.author.tag}:|${message.author.tag}`, "");
+            generated_text = generated_text.replaceAll("{{user}}", message.author.tag);
+            generated_text = generated_text.replaceAll(`\n${message.author.tag}:|${message.author.tag}`, "");
             const to_save = `${last_story}\n${message.author.tag}: ${message_content}\n${persona.name}: ${generated_text}\n`;
             guild_model.updateOne({guild_id: message.guild?.id}, {
                 $set: {
