@@ -15,7 +15,8 @@ declare module 'discord.js' {
 		config: typeof config;
 		db: Mongoose;
 		embeds: {
-			error: (message: string) => EmbedBuilder;
+			error: (message: string) => EmbedBuilder,
+			warn: (message: string) => EmbedBuilder;
 		}
 	}
 }
@@ -47,9 +48,17 @@ client.commands = new Collection<string, Object>();
 client.embeds = {
 	error: (message: string) => {
 		return new EmbedBuilder()
-			.setTitle("Error")
+			.setTitle("Something went wrong..")
 			.setDescription(message)
 			.setColor(config.hex_colors.error)
+			.setTimestamp(new Date())
+			.setFooter({ text: client.user?.username ?? "", iconURL: client.user?.avatarURL() ?? undefined })
+	},
+	warn: (message: string) => {
+		return new EmbedBuilder()
+			.setTitle("Something went wrong..")
+			.setDescription(message)
+			.setColor(config.hex_colors.warning)
 			.setTimestamp(new Date())
 			.setFooter({ text: client.user?.username ?? "", iconURL: client.user?.avatarURL() ?? undefined })
 	}
@@ -58,9 +67,10 @@ client.embeds = {
 
 const slash_commands = []
 
-const command_files = glob.sync(__dirname+'/commands/**/*.js')
+const command_files = glob.sync(__dirname+'/commands/**/*.js', { ignore: '**/commands.js' })
 for (const command_file of command_files) {
-	const command: Command = require(path.resolve(command_file))
+	const resolved_path = path.resolve(command_file);
+	const command: Command = require(resolved_path)
 	if (command && (command.run || command.interact) && command.name) {
 		client.commands.set(command.name, command);
 		if ((command.type === 'hybrid' || command.type === 'slash') && command.data) {
@@ -93,7 +103,7 @@ const rest = new REST().setToken(config.token);
 
 		if (slash_commands.length === 0) return;
 		await rest.put(
-			Routes.applicationGuildCommands(config.client_id, config.guild_id),
+			Routes.applicationCommands(config.client_id),
 			{ body: slash_commands }
 		)
 		

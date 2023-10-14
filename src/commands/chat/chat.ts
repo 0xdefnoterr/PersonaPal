@@ -5,7 +5,7 @@ import { guild_model } from "../../db/models/setup";
 
 module.exports = {
     name: "chat",
-    description: "Setup the mommy bot with your desired character",
+    description: "Chat with the current setup ai",
     category: "chat",
     usage: "chat <message>",
     aliases: ["config"],
@@ -66,10 +66,8 @@ module.exports = {
         const response = await fetch_api(guild_info.collab_link, "generate", generation_config);
 
 
-        console.log(response);
-
         if (response.error)
-            return message.reply({embeds : [client.embeds.error(response.error)]});
+            return message.reply({embeds : [client.embeds.error("Collab link is invalid, please run the `setup` command")]});
         else if (response.detail) {
             return message.reply({embeds : [client.embeds.error(response.detail.msg)]});
         }
@@ -91,36 +89,5 @@ module.exports = {
 
             return message.reply({content: generated_text});
         }
-        // else {
-        //     let generated_text = response.results?.[0]?.text ?? "";
-        //     generated_text = generated_text.replaceAll("\\nYou:|You:", "");
-        //     generated_text = generated_text.replaceAll(`\\n${message.author.tag}:|${message.author.tag}`, "");
-
-        //     const to_save = `\n${message.author.tag}: ${message_content}\n${response.results?.[0]?.text ?? ""}`;
-            
-        //     // guild.story.conversation does not exist neither does guild.story
-        //     if (!guild_info.story?.conversation) {
-        //         guild_info.story = {
-        //             conversation: {
-        //                 body: to_save
-        //             },
-        //             persona: guild_info.persona,
-        //             channel_id: message.channel.id,
-        //             guild_id: message.guild?.id,
-        //             created_at: new Date(),
-        //             updated_at: new Date()
-        //         };
-        //     } else {
-        //         guild_info.story.conversation.body = to_save;
-        //         guild_info.story.updated_at = new Date();
-        //     }
-
-        //     await guild_info.save();
-
-        //     return message.reply({content: generated_text});
-        // }
-
-        //const response = await fetch_api(guild_info.collab_link, "generate", generation_config);
-
     }
 } as Command;

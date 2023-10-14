@@ -70,7 +70,6 @@ module.exports = {
 
         const collector = embed_message.createReactionCollector({filter, time: 60000});
 
-
         collector.on("collect", (reaction, user) => {
             if (reaction.emoji.name === "⬅️") {
                 if (current_page === 1) return;

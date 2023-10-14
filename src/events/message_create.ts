@@ -35,7 +35,7 @@ module.exports = {
 		const command: Command = client.commands.find((cmd: Command) => cmd.name === command_name || cmd.aliases.includes(command_name as string)) as Command;
 
 		if (!command) {
-			let closest_command = ".";
+			let closest_command = "";
 			let closest_distance = 3;
 			client.commands.map((cmd: Command) => {
 				const distance = levenshtein_distance(command_name as string, cmd.name);
@@ -52,17 +52,9 @@ module.exports = {
 					})
 				}
 			});
-
-			const embed = new EmbedBuilder()
-				.setAuthor({name: client.user?.username ?? "", iconURL: client.user?.avatarURL() ?? undefined})
-				.setTitle("Command not found")
-				.setDescription(`Did you mean \`${closest_command}\`?`)
-				.setColor(config.hex_colors.error)
-				.setTimestamp(new Date())
-				.setFooter({text: message.author.tag, iconURL: message.author.avatarURL() ?? undefined})
-
+			if (closest_command === "") return;
+			const embed = client.embeds.error(`Command \`${command_name}\` not found, did you mean \`${closest_command}\`?`);
 			return await message.reply({ embeds: [embed] });
-
 		}
 
 		const cd = await cd_model.findOne({command: command.name, user_id: message.author.id, guild_id: message.guild?.id});
@@ -71,15 +63,7 @@ module.exports = {
 			const time_diff = Date.now() - cd.time.getTime();
 			if (time_diff < (command.cooldown ?? config.default_cooldown) * 1000) {
 				const time_left = ((command.cooldown ?? config.default_cooldown) * 1000 - time_diff) / 1000;
-
-				const embed = new EmbedBuilder()
-					.setAuthor({name: client.user?.username ?? "", iconURL: client.user?.avatarURL() ?? undefined})
-					.setTitle("Cooldown")
-					.setDescription(`Please wait ${time_left.toFixed(1)} more seconds before using ${command.name}`)
-					.setColor(config.hex_colors.warning)
-					.setTimestamp(new Date())
-					.setFooter({text: message.author.tag, iconURL: message.author.avatarURL() ?? undefined})
-
+				const embed = client.embeds.error(`You are on cooldown for ${time_left.toFixed(2)} seconds`);
 				return await message.reply({ embeds: [embed] });
 			}
 		}
@@ -95,22 +79,13 @@ module.exports = {
 			});
 
 			if (missing_permissions.length > 0 && !missing_permissions.includes("EmbedLinks")) {
-				const embed = new EmbedBuilder()
-					.setAuthor({name: client.user?.username ?? "", iconURL: client.user?.avatarURL() ?? undefined})
-					.setTitle("Missing permissions")
-					.setDescription(`I am missing the following permissions: \`${missing_permissions.join(", ")}\``)
-					.setColor(config.hex_colors.error)
-					.setTimestamp(new Date())
-					.setFooter({text: message.author.tag, iconURL: message.author.avatarURL() ?? undefined})
-
-				return message.reply({ embeds: [embed] });
+				return message.reply({ embeds: [client.embeds.error(`I am missing the following permissions: \`${missing_permissions.join(", ")}\``)] });
 			} else if (missing_permissions.includes("EmbedLinks") && !missing_permissions.includes("SendMessages")) {
 				return message.reply(`I am missing the following permissions: \`${missing_permissions.join(", ")}\``);
 			}
 		}
 
 		if (command.required_permissions) {
-
 			const user_permissions = message.guild?.channels.cache.get(message.channel.id)?.permissionsFor(message.author.id)?.toArray() ?? [];
 			const missing_permissions: PermissionsString[] = [];
 			command.required_permissions.forEach((permission: PermissionsString) => {
@@ -119,6 +94,9 @@ module.exports = {
 				}
 			});
 
+			if (missing_permissions.length > 0) {
+				return message.reply({ embeds: [client.embeds.warn(`You are missing the following permissions: \`${missing_permissions.join(", ")}\``)] });
+			}
 		}
 
 		if (command.owner_only && !client.config.owners.includes(message.author.id)) return message.reply(`Command ${command.name} is owner only`);
