@@ -20,7 +20,7 @@ const update_persona = async (guild_id: string, new_value: any, key: string) => 
     }
 }
 
-const show_current_persona = async (guild_id: string, embeded_message: Message, queued_changes, finished: boolean=false) => {
+const show_current_persona = async (guild_id: string, embeded_message: Message, queued_changes, finished: boolean=false, no_prev_embed=false) => {
     let guild = await guild_model.findOne({guild_id: guild_id})
     let current_persona = guild?.persona;
 
@@ -52,7 +52,9 @@ const show_current_persona = async (guild_id: string, embeded_message: Message, 
                 {name: "Story", value: current_persona?.greeting ?? "Not specified."}
             ])
         }
-        await embeded_message.edit({embeds: finished? [new_embed] : [embeded_message.embeds[0], new_embed]})
+        if (no_prev_embed)  
+            return await embeded_message.channel.send({embeds: [new_embed]});
+        return await embeded_message.edit({embeds: finished? [new_embed] : [embeded_message.embeds[0], new_embed]})
     } catch (error) {
         return;
     }
@@ -294,8 +296,8 @@ module.exports = {
             return run_setup(client, message, args);
         }
 
-        if (args[0] === "show") {
-            await show_current_persona(message.guild?.id ?? "", message, {}, true);
+        if (args[0] == 'show') {
+            return await show_current_persona(message.guild?.id ?? "", message, {}, true, true);
         }
 
     }

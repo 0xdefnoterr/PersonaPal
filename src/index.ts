@@ -16,7 +16,8 @@ declare module 'discord.js' {
 		db: Mongoose;
 		embeds: {
 			error: (message: string) => EmbedBuilder,
-			warn: (message: string) => EmbedBuilder;
+			warn: (message: string) => EmbedBuilder,
+			success: (message: string) => EmbedBuilder;
 		}
 	}
 }
@@ -59,6 +60,14 @@ client.embeds = {
 			.setTitle("Something went wrong..")
 			.setDescription(message)
 			.setColor(config.hex_colors.warning)
+			.setTimestamp(new Date())
+			.setFooter({ text: client.user?.username ?? "", iconURL: client.user?.avatarURL() ?? undefined })
+	},
+	success: (message: string) => {
+		return new EmbedBuilder()
+			.setTitle("Success!")
+			.setDescription(message)
+			.setColor(config.hex_colors.success)
 			.setTimestamp(new Date())
 			.setFooter({ text: client.user?.username ?? "", iconURL: client.user?.avatarURL() ?? undefined })
 	}

@@ -26,7 +26,7 @@ module.exports = {
             const embed = new EmbedBuilder()
 				.setAuthor({name: client.user?.username ?? "", iconURL: client.user?.avatarURL() ?? undefined})
                 .setTitle(command.name)
-                .setDescription(`\`description: ${command.description} \`\n\`usage: ${command.description}\`\n\`cooldown: ${command.cooldown ?? client.config.default_cooldown}s\` \n\`aliases: ${command.aliases.join(", ")}\``)
+                .setDescription(`\`description: ${command.description} \`\n\`usage: ${command.usage}\`\n\`cooldown: ${command.cooldown ?? client.config.default_cooldown}s\` \n\`aliases: ${command.aliases.join(", ")}\``)
                 .setColor(client.config.hex_colors.info)
                 .setTimestamp(new Date())
                 .setFooter({text: message.author.tag, iconURL: message.author.avatarURL() ?? undefined})

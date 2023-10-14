@@ -8,7 +8,7 @@ module.exports = {
     description: "Chat with the current setup ai",
     category: "chat",
     usage: "chat <message>",
-    aliases: ["config"],
+    aliases: ["talk",],
     bot_permisisons: ["SendMessages", "EmbedLinks", "ManageMessages"],
     owner_only: false,
     enabled: true,
