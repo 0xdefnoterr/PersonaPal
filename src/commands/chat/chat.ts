@@ -22,7 +22,7 @@ module.exports = {
         const generation_config = {
             "n": 1,
             "max_context_length": 2048,
-            "max_length": 64,
+            "max_length": 512,
             "rep_pen": 1.1,
             "temperature": 0.7,
             "top_p": 0.5,
@@ -70,6 +70,9 @@ module.exports = {
 
         if (response.error)
             return message.reply({embeds : [client.embeds.error(response.error)]});
+        else if (response.detail) {
+            return message.reply({embeds : [client.embeds.error(response.detail.msg)]});
+        }
         else {
             let generated_text = response.results?.[0]?.text ?? "";
             generated_text = generated_text.replaceAll("{{user}}", message.author.tag);
