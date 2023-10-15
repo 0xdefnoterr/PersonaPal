@@ -57,7 +57,7 @@ const show_current_persona = async (guild_id: string, embeded_message: Message, 
 const setup_pages = [
     {
         title: "Step 1: Setting up the endpoint. (KoboldAI)",
-        description: "Reply with the google collab link [google collab](https://colab.research.google.com/github/koboldai/KoboldAI-Client/blob/main/colab/GPU.ipynb) that you get when executing.\n **Note:** Make sure to select MythoMax 13B as the model",
+        description: "Reply with the google collab link [google collab](https://colab.research.google.com/drive/1l_wRGeD-LnRl3VtZHDc7epW_XW0nJvew?usp=sharing) that you get when executing.\n **Note:** Make sure to select MythoMax 13B as the model\n add --multiuser at the end of the python command, executing koboldcpp",
         type: "collab_link",
         on_page: async(client: Client, embedded_message: Message, queued_changes) => {
             await show_current_persona(embedded_message.guild?.id, embedded_message, queued_changes);
@@ -170,12 +170,11 @@ const run_tag_search = async (client: Client, message: Message, args: string[]) 
                 }
 
                 let character_whole = await fetch_specific_character(character.fullPath);
-
                 try {
-                    character_whole.data.node.definition.personality = character_whole.data.node.definition.personality.replace("{{char}}", character.name);
-                    character_whole.data.node.definition.post_history_instructions = character_whole.data.node.definition.post_history_instructions.replace("{{char}}", character.name);
-                    character_whole.data.node.definition.first_message = character_whole.data.node.definition.first_message.replace("{{char}}", character.name);
-                    character_whole.data.node.definition.example_dialogs = character_whole.data.node.definition.example_dialogs.replace("{{char}}", character.name);
+                    character_whole.data.node.definition.personality = character_whole.data.node.definition.personality.replace(/{{char}}/g, character.name);
+                    character_whole.data.node.definition.post_history_instructions = character_whole.data.node.definition.post_history_instructions.replace(/{{char}}/g, character.name);
+                    character_whole.data.node.definition.first_message = character_whole.data.node.definition.first_message.replace(/{{char}}/g, character.name);
+                    character_whole.data.node.definition.example_dialogs = character_whole.data.node.definition.example_dialogs.replace(/{{char}}/g, character.name);
                 } catch (error) {
                     return message.channel.send({embeds: [client.embeds.error("Failed to replace {{char}}")]}); 
                 }
@@ -224,10 +223,10 @@ const run_import = async (client: Client, message: Message, args: string[]) => {
     }
 
     try {
-        character.data.node.definition.personality = character.data.node.definition.personality.replace("{{char}}", character.data.node.name);
-        character.data.node.definition.post_history_instructions = character.data.node.definition.post_history_instructions.replace("{{char}}", character.data.node.name);
-        character.data.node.definition.first_message = character.data.node.definition.first_message.replace("{{char}}", character.data.node.name);
-        character.data.node.definition.example_dialogs = character.data.node.definition.example_dialogs.replace("{{char}}", character.data.node.name);
+        character.data.node.definition.personality = character.data.node.definition.personality.replace(/{{char}}/g, character.data.node.name);
+        character.data.node.definition.post_history_instructions = character.data.node.definition.post_history_instructions.replace(/{{char}}/g, character.data.node.name);
+        character.data.node.definition.first_message = character.data.node.definition.first_message.replace(/{{char}}/g, character.data.node.name);
+        character.data.node.definition.example_dialogs = character.data.node.definition.example_dialogs.replace(/{{char}}/g, character.data.node.name);
     } catch (error) {
         return message.channel.send({embeds: [client.embeds.error("Failed to replace {{char}}")]}); 
     }
@@ -358,6 +357,7 @@ module.exports = {
     description: "Use `,setup tags [tags]` to search with tags or not for a character.\n Use `,setup show` to show your current persona.\n Use `,setup import [chub.ai link]` to import a character.",
     category: "utility",
     usage: "setup [show|tags|import] [args]",
+    cooldown: 10,
     aliases: ["config"],
     bot_permisisons: ["SendMessages", "EmbedLinks", "ManageMessages", "AddReactions"],
     required_permissions: ["Administrator"],

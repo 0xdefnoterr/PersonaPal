@@ -17,7 +17,6 @@ module.exports = {
         const message_content = args.join(" ");
         if (!message_content) return message.reply({embeds : [client.embeds.error("Please provide a message to send to the mommy bot")]});
 
-        // we want to feed the people discord tag to the ai
 
         const generation_config = {
             "n": 1,
@@ -39,7 +38,6 @@ module.exports = {
 
         let guild_info = await guild_model.findOne({guild_id: message.guild?.id});
 
-        // check if the guild is setup with a character and a collab link
         if (!guild_info)
             return message.reply({embeds : [client.embeds.error("This server is not setup yet, please run the `setup` command")]});
 
@@ -66,8 +64,10 @@ module.exports = {
         await message.channel.sendTyping();
         const response = await fetch_api(guild_info.collab_link, "generate", generation_config);
 
-        // console.log(prompt, response);
+        console.log(prompt);
 
+        if (response === 404)
+            return message.reply({embeds : [client.embeds.error("Collab link is invalid, please run the `setup` command")]});
         if (response.error)
             return message.reply({embeds : [client.embeds.error("Collab link is invalid, please run the `setup` command")]});
         else if (response.detail) {
