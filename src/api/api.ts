@@ -12,6 +12,36 @@ const endpoints = {
     "delete_story": {type: "DELETE", url: PREFIX + "story"},
 }
 
+const chub_ai = "https://api.chub.ai/search?"
+const chub_ai_character = "https://api.chub.ai/api/characters/"
+const avatar_chub_ai = "https://avatars.charhub.io/avatars/"
+
+// https://api.chub.ai/search?search=&first=1&topics=gentle%20femdom&excludetopics=Loli%2CRape%2CShota&excludetopics=&page=1&sort=star_count&venus=false&min_tokens=50&page=1
+
+const fetch_characters = async (page: number, tags: string[], search: string = "") => {
+    const tags_query = tags.join(",");
+    const url = `${chub_ai}search=${search}&first=1&topics=${tags_query}&excludetopics=Loli,Rape,Shota&page=${page}&sort=star_count&venus=false&min_tokens=50`
+    try {
+        const res = await fetch(encodeURI(url));
+        return await res.json();
+    } catch (error) {
+        return {error: error};
+    }
+}
+
+const get_character_avatar = (id: string) => {
+    return `${avatar_chub_ai}${id}/chara_card_v2.png`;
+}
+
+const fetch_specific_character = async (id: string) => {
+    const url = `${chub_ai_character}${id}?full=true`;
+    try {
+        const res = await fetch(encodeURI(url));
+        return {data: await res.json(), avatar: `${avatar_chub_ai}${id}/chara_card_v2.png`};
+    } catch (error) {
+        return {error: error};
+    }
+}
 
 const fetch_api = async (base_url: string, endpoint: string, body?: any) => {
     let url = base_url + endpoints[endpoint].url;
@@ -33,4 +63,4 @@ const fetch_api = async (base_url: string, endpoint: string, body?: any) => {
     }
 }
 
-export {fetch_api};
+export {fetch_api, fetch_characters, fetch_specific_character, get_character_avatar};

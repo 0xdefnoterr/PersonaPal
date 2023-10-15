@@ -37,8 +37,8 @@ const client = new Client({
 	presence: {
 		status: 'idle',
 		activities: [{
-			type: ActivityType.Custom,
-			name: 'with your feelings'
+			type: ActivityType.Playing,
+			name: 'with your feelings :3'
 		}]
 	}
 });

@@ -1,6 +1,6 @@
 import { ChatInputCommandInteraction, Client, Message, EmbedBuilder, CommandInteractionOptionResolver, PermissionsBitField } from "discord.js";
-import { fetch_api } from "../../api/api";
-import { Guild_S, guild_model } from "../../db/models/setup";
+import { fetch_api, fetch_characters, fetch_specific_character, get_character_avatar } from "../../api/api";
+import { guild_model } from "../../db/models/setup";
 import { Command } from "../commands";
 
 enum SetupReturn {
@@ -31,16 +31,8 @@ const show_current_persona = async (guild_id: string, embeded_message: Message, 
     }
 
     const new_embed = new EmbedBuilder()
-        .setTitle("Current persona")
-        .setDescription("Information about your current character that is being used")
-        .setTimestamp(new Date())
-        .setThumbnail(current_persona?.avatar_url ?? undefined)
         .setFields([
             {name: "Collab link", value: guild?.collab_link ?? "Not one yet."},
-            {name: "Character's name", value: current_persona?.name ?? "Not one yet."},
-            {name: "Character's personality", value: current_persona?.personality?.substring(0, 50) ?? "Not one yet."},
-            {name: "Character's description", value: current_persona?.dialogue?.substring(0, 50) ?? "Not one yet."},
-            {name: "Character's greeting", value: current_persona?.greeting?.substring(0, 50) ?? "Not one yet."}
         ])
 
     try {
@@ -49,8 +41,9 @@ const show_current_persona = async (guild_id: string, embeded_message: Message, 
             new_embed.setFields([
                 {name: "Collab link", value: guild?.collab_link ?? "Not specified."},
                 {name: "Character's name", value: current_persona?.name ?? "Not specified."},
-                {name: "Story", value: current_persona?.greeting ?? "Not specified."}
+                {name: "Story", value: current_persona?.greeting?.substring(0, 800) ?? "Not specified."}
             ])
+            if (current_persona?.avatar_url) new_embed.setImage(current_persona.avatar_url);
         }
         if (no_prev_embed)  
             return await embeded_message.channel.send({embeds: [new_embed]});
@@ -59,6 +52,7 @@ const show_current_persona = async (guild_id: string, embeded_message: Message, 
         return;
     }
 }
+
 
 const setup_pages = [
     {
@@ -90,198 +84,280 @@ const setup_pages = [
 
             return [SetupReturn.Success, "Successfully imported collab link"]
         }
-    },
-    {
-        title: "Step 2: Set your character name",
-        description: "Give your character's name",
-        type: "name",
-        on_page: async(client: Client, embedded_message: Message, queued_changes) => {
-            await show_current_persona(embedded_message.guild?.id, embedded_message, queued_changes);
-        },
-        after: async (client: Client, message: Message, args: string[], embeded_message: Message) => {
-            setTimeout(() => {
-                message.deletable && message.delete();
-            }, DEL_TIMEOUT);
-            return [SetupReturn.Success, "Pushed for update your character's name"]
-        }
-    },
-    {
-        title: "Step 3: Define your character's personality or use a pre-made character", 
-        description: "What is your character's personality ([character(\"Mistress Velvet\")\n{\nSpecies(\"Human\")..]) \n You can copy paste the char_persona from a [character json](https://chub.ai)\n If you would like to keep the current persona, you can react with ➡️",
-        type: "personality",
-        on_page: async(client: Client, embedded_message: Message, queued_changes) => {
-            await show_current_persona(embedded_message.guild?.id, embedded_message, queued_changes);
-        },
-        after: async (client: Client, message: Message, args: string[], embeded_message: Message) => {
-            setTimeout(() => {
-                message.deletable && message.delete();
-            }, DEL_TIMEOUT);
-            return [SetupReturn.Success, "Pushed for update your character's personality"]
-        },
-    },
-    {
-        title: "Step 4: Dialogue example",
-        description: "Send your character's dialogue example from the json",
-        type: "dialogue",
-        on_page: async(client: Client, embedded_message: Message, queued_changes) => {
-            await show_current_persona(embedded_message.guild?.id, embedded_message, queued_changes);
-        },
-        after: async (client: Client, message: Message, args: string[], embeded_message: Message) => {
-            let guild = await guild_model.findOne({guild_id: message.guild?.id});
-            message.content = message.content.replaceAll("{{char}}", guild?.persona?.name ?? "");
-            setTimeout(() => {
-                message.deletable && message.delete();
-            }, DEL_TIMEOUT);
-            return [SetupReturn.Success, "Pushed for update your character's dialogue"]
-        }
-    },
-    {
-        title: "Step 5: Greeting example ('Mistress Velvet, *her voice a blend of authority and eagerness, welcomes you into her realm*')",
-        description: "Send your character's greeting from the json",
-        type: "greeting",
-        on_page: async(client: Client, embedded_message: Message, queued_changes) => {
-            await show_current_persona(embedded_message.guild?.id, embedded_message, queued_changes);
-        },
-        after: async (client: Client, message: Message, args: string[], embeded_message: Message) => {
-            setTimeout(() => {
-                message.deletable && message.delete();
-            }, DEL_TIMEOUT);
-            return [SetupReturn.Success, "Pushed for update your character's greeting"]
-        }
-    },
+    }
 ]
 
 
-const run_setup = async (client: Client, message: Message, args: string[]) => {
-    let current_page = 0;
-        let max_page = setup_pages.length;
 
-        const embed = new EmbedBuilder()
-            .setAuthor({name: client.user?.username ?? "", iconURL: client.user?.avatarURL() ?? undefined})
-            .setTitle(setup_pages[current_page].title)
-            .setDescription(setup_pages[current_page].description)
+const run_tag_search = async (client: Client, message: Message, args: string[]) => {
+    const fetch_character_embed = async (character: any, avatar_url: string, current_page: number) => {
+        return new EmbedBuilder()
             .setColor(client.config.hex_colors.info)
             .setTimestamp(new Date())
-            .setFooter({text: message.author.tag, iconURL: message.author.avatarURL() ?? undefined})
+            .setAuthor({name: character.name, iconURL: avatar_url})
+            .setFields([
+                {name: "Description", value: character.tagline ?? "None"},
+                {name: "Tags", value: character.topics?.join(", ") ?? "None"}
+            ])
+            .setFooter({text: `${character.fullPath} | ${character.starCount} stars`})
+            .setImage(avatar_url)
+    }
+
+    let current_page = 1;
+    const tags = args.slice(1);
+    
+    const r_character = await fetch_characters(current_page, tags);
+
+    if (r_character?.data?.nodes?.length === 0 ) {
+        return message.channel.send({embeds: [client.embeds.error("No characters found")]});
+    }
+    let character = r_character.data.nodes[0];
+
+    const embed = await fetch_character_embed(character, get_character_avatar(character.fullPath), current_page);
+                
+    const embeded_message = await message.channel.send({embeds: [embed]});
+
+    await embeded_message.react("⬅️");
+    await embeded_message.react("➡️");
+    await embeded_message.react("✔");
+
+    const filter = (reaction: any, user: any) => {
+        return ["⬅️", "➡️", "✔"].includes(reaction.emoji.name) && user.id === message.author.id;
+    }
+
+    const collector = embeded_message.createReactionCollector({
+        idle: 60000,
+        time: 600000,
+        max: 999,
+        filter: filter
+    });
+
+    collector.on("collect", async (reaction: any) => {
+        switch (reaction.emoji.name) {
+            case "✔":
+                collector.stop("finished");
+                break;
+            case "⬅️":
+                if (current_page === 1) return;
+                current_page--;
+                const r_character = await fetch_characters(current_page, tags);
 
 
-        let changes_queue = {};
-        const embeded_message = await message.reply({ embeds: [embed] });
-        await show_current_persona(message.guild?.id ?? "", embeded_message, changes_queue);
+                character = r_character.data.nodes[0];
+                const new_embed = await fetch_character_embed(character, get_character_avatar(character.fullPath), current_page);
 
-        const filter = (m: Message) => m.author.id === message.author.id;
+                await embeded_message.edit({embeds: [new_embed]});
+                break;
+            case "➡️":
+                current_page++;
+                const r_character2 = await fetch_characters(current_page, tags);
 
-        const collector = message.channel.createMessageCollector({
-            idle: 60000,
-            time: 600000,
-            max: 20,
-            filter: filter
-        });
+                character = r_character2.data.nodes[0];
+                const new_embed2 = await fetch_character_embed(character, get_character_avatar(character.fullPath), current_page);
 
-        await embeded_message.react("❌");
-        await embeded_message.react("➡️");
-        await embeded_message.react("✔");
-
-        const reaction_filter = (reaction: any, user: any) => {
-            return ["❌", "➡️", "✔"].includes(reaction.emoji.name) && user.id === message.author.id;
+                await embeded_message.edit({embeds: [new_embed2]});
+                break;
         }
+    });
 
-        const reaction_collector = embeded_message.createReactionCollector({
-            idle: 60000,
-            time: 600000,
-            max: 20,
-            filter: reaction_filter
-        });
+    collector.on("end", async (collected, reason) => {
+        switch (reason) {
+            case "finished":
+                let guild = await guild_model.findOne({guild_id: message.guild?.id});
+
+                if (!guild) {
+                    return message.channel.send({embeds: [client.embeds.error("No guild found")]});
+                }
+
+                let character_whole = await fetch_specific_character(character.fullPath);
+
+                try {
+                    character_whole.data.node.definition.personality = character_whole.data.node.definition.personality.replace("{{char}}", character.name);
+                    character_whole.data.node.definition.post_history_instructions = character_whole.data.node.definition.post_history_instructions.replace("{{char}}", character.name);
+                    character_whole.data.node.definition.first_message = character_whole.data.node.definition.first_message.replace("{{char}}", character.name);
+                    character_whole.data.node.example_dialogs = character_whole.data.node.definition.example_dialogs.replace("{{char}}", character.name);
+                } catch (error) {
+                    return message.channel.send({embeds: [client.embeds.error("Failed to replace {{char}}")]}); 
+                }
+
+                await guild_model.findOneAndUpdate(
+                    {guild_id: message.guild?.id},
+                    {persona: {
+                        avatar_url: character_whole.avatar,
+                        name: character.name,
+                        greeting: character_whole.data.node.definition.first_message,
+                        personality: character_whole.data.node.definition.personality,
+                        post_history: character_whole.data.node.definition.post_history_instructions,
+                        system_prompt: character_whole.data.node.definition.system_prompt,
+                        dialogue: character_whole.data.node.definition.example_dialogs,
+                        tags: character.topics}})
+
+                await show_current_persona(message.guild?.id ?? "", embeded_message, {}, true);
+                break;
+            case "idle":
+                embed.setTitle("Timeout")
+                    .setDescription("Search timed out")
+                    .setFields([])
+                    .setImage(undefined)
+                    .setColor(client.config.hex_colors.warning);
+                await embeded_message.edit({embeds: [embed]});
+                break;
+        }
+    });
+}
+
+const run_import = async (client: Client, message: Message, args: string[]) => {
+    if (!args[1]) return message.channel.send({embeds: [client.embeds.error("No link provided")]});
+
+    let chub_ai_link = args[1];
+
+    let link = chub_ai_link.split("/").slice(-2).join("/");
+
+    let character = await fetch_specific_character(link);
+
+    if (character.error) return message.channel.send({embeds: [client.embeds.error("Failed to fetch character")]});
+
+    let guild = await guild_model.findOne({guild_id: message.guild?.id});
+
+    if (!guild) {
+        return message.channel.send({embeds: [client.embeds.error("No guild found")]});
+    }
+
+    try {
+        character.data.node.definition.personality = character.data.node.definition.personality.replace("{{char}}", character.data.node.name);
+        character.data.node.definition.post_history_instructions = character.data.node.definition.post_history_instructions.replace("{{char}}", character.data.node.name);
+        character.data.node.definition.first_message = character.data.node.definition.first_message.replace("{{char}}", character.data.node.name);
+        character.data.node.example_dialogs = character.data.node.definition.example_dialogs.replace("{{char}}", character.data.node.name);
+    } catch (error) {
+        return message.channel.send({embeds: [client.embeds.error("Failed to replace {{char}}")]}); 
+    }
+
+    await guild_model.findOneAndUpdate(
+        {guild_id: message.guild?.id},
+        {persona: {
+            avatar_url: character.avatar,
+            name: character.data.node.name,
+            greeting: character.data.node.definition.first_message,
+            personality: character.data.node.definition.personality,
+            post_history: character.data.node.definition.post_history_instructions,
+            system_prompt: character.data.node.definition.system_prompt,
+            dialogue: character.data.node.definition.example_dialogs,
+            tags: character.data.node.topics}})
+    
+    await show_current_persona(message.guild?.id ?? "", message, {}, true, true);
+}
+
+const run_setup = async (client: Client, message: Message, args: string[]) => {
+    let current_page = 0;
+    let max_page = setup_pages.length;
+
+    const embed = new EmbedBuilder()
+        .setAuthor({name: client.user?.username ?? "", iconURL: client.user?.avatarURL() ?? undefined})
+        .setTitle(setup_pages[current_page].title)
+        .setDescription(setup_pages[current_page].description)
+        .setColor(client.config.hex_colors.info)
+        .setTimestamp(new Date())
+        .setFooter({text: message.author.tag, iconURL: message.author.avatarURL() ?? undefined})
+
+    let changes_queue = {};
+    const embeded_message = await message.reply({ embeds: [embed] });
+    await show_current_persona(message.guild?.id ?? "", embeded_message, changes_queue);
+
+    const filter = (m: Message) => m.author.id === message.author.id;
+
+    const collector = message.channel.createMessageCollector({
+        idle: 60000,
+        time: 600000,
+        max: 20,
+        filter: filter
+    });
+
+    await embeded_message.react("❌");
+
+    const reaction_filter = (reaction: any, user: any) => {
+        return ["❌"].includes(reaction.emoji.name) && user.id === message.author.id;
+    }
+
+    const reaction_collector = embeded_message.createReactionCollector({
+        idle: 60000,
+        time: 600000,
+        max: 20,
+        filter: reaction_filter
+    });
 
 
 
-        reaction_collector.on("collect", async (reaction: any) => {
-            switch (reaction.emoji.name) {
-                case "✔":
+    reaction_collector.on("collect", async (reaction: any) => {
+        switch (reaction.emoji.name) {
+            case "❌":
+                collector.stop("cancelled");
+                reaction_collector.stop("cancelled");
+                break;
+        }
+    });
+
+
+    collector.on("collect", async (m: Message) => {
+        let [ret_value, description] = await setup_pages[current_page]?.after(client, m, args, embeded_message);
+
+        switch (ret_value) {
+            case SetupReturn.Success:
+                changes_queue[setup_pages[current_page].type] = m.content;
+                current_page++;
+                await setup_pages[current_page]?.on_page(client, embeded_message, changes_queue);
+                if (current_page === max_page) {
                     collector.stop("finished");
                     reaction_collector.stop("finished");
-                    break;
-                case "❌":
-                    collector.stop("cancelled");
-                    reaction_collector.stop("cancelled");
-                    break;
-                case "➡️":
-                    current_page++;
-                    await setup_pages[current_page]?.on_page(client, embeded_message, changes_queue);
-                    if (current_page === max_page) {
-                        collector.stop("finished");
-                        reaction_collector.stop("finished");
-                    } else {
-                        embed.setTitle(setup_pages[current_page].title)
-                            .setDescription(setup_pages[current_page].description);
-                        await embeded_message.edit({embeds: [embed, embeded_message.embeds[1]]});
-                    }
-                    break;
+                } else {
+                    embed.setTitle(setup_pages[current_page].title)
+                        .setDescription(setup_pages[current_page].description);
+                    await embeded_message.edit({embeds: [embed, embeded_message.embeds[1]]});
                 }
-        });
+                break;
+            case SetupReturn.Cancelled:
+                collector.stop("cancelled");
+                reaction_collector.stop("cancelled");
+                break;
+            case SetupReturn.Failed:
+                collector.stop("failed");
+                reaction_collector.stop("failed");
+                break;
+        }
+    });
 
-
-        collector.on("collect", async (m: Message) => {
-            let [ret_value, description] = await setup_pages[current_page]?.after(client, m, args, embeded_message);
-
-            switch (ret_value) {
-                case SetupReturn.Success:
-                    changes_queue[setup_pages[current_page].type] = m.content;
-                    current_page++;
-                    await setup_pages[current_page]?.on_page(client, embeded_message, changes_queue);
-                    if (current_page === max_page) {
-                        collector.stop("finished");
-                        reaction_collector.stop("finished");
-                    } else {
-                        embed.setTitle(setup_pages[current_page].title)
-                            .setDescription(setup_pages[current_page].description);
-                        await embeded_message.edit({embeds: [embed, embeded_message.embeds[1]]});
-                    }
-                    break;
-                case SetupReturn.Cancelled:
-                    collector.stop("cancelled");
-                    reaction_collector.stop("cancelled");
-                    break;
-                case SetupReturn.Failed:
-                    collector.stop("failed");
-                    reaction_collector.stop("failed");
-                    break;
-            }
-        });
-
-        collector.on("end", async (collected, reason) => {
-            switch (reason) {
-                case "cancelled":
-                    embed.setTitle("Setup cancelled")
-                        .setColor(client.config.hex_colors.warning)
-                    await embeded_message.edit({embeds: [embed]});
-                    break;
-                case "failed":
-                    embed.setTitle("Setup failed")
-                        .setColor(client.config.hex_colors.error);
-                    await embeded_message.edit({embeds: [embed]});
-                    break;
-                case "finished":
-                    for (let obj in changes_queue) {
-                        console.log(obj)
-                        await update_persona(message.guild?.id ?? "", changes_queue[obj], obj);
-                    }
-                    await show_current_persona(message.guild?.id ?? "", embeded_message, {}, true);
-                    break;
-                case "idle":
-                    embed.setTitle("Setup timed out")
-                        .setColor(client.config.hex_colors.warning);
-                    await embeded_message.edit({embeds: [embed]});
-                    break;
-            }
-        });
+    collector.on("end", async (collected, reason) => {
+        switch (reason) {
+            case "cancelled":
+                embed.setTitle("Setup cancelled")
+                    .setColor(client.config.hex_colors.warning)
+                await embeded_message.edit({embeds: [embed]});
+                break;
+            case "failed":
+                embed.setTitle("Setup failed")
+                    .setColor(client.config.hex_colors.error);
+                await embeded_message.edit({embeds: [embed]});
+                break;
+            case "finished":
+                for (let obj in changes_queue) {
+                    console.log(obj)
+                    await update_persona(message.guild?.id ?? "", changes_queue[obj], obj);
+                }
+                await show_current_persona(message.guild?.id ?? "", embeded_message, {}, true);
+                break;
+            case "idle":
+                embed.setTitle("Setup timed out")
+                    .setColor(client.config.hex_colors.warning);
+                await embeded_message.edit({embeds: [embed]});
+                break;
+        }
+    });
 }
 
 module.exports = {
     name: "setup",
-    description: "Setup the mommy bot with your desired character",
+    description: "Use `,setup tags [tags]` to search with tags or not for a character.\n Use `,setup show` to show your current persona.\n Use `,setup import [chub.ai link]` to import a character.",
     category: "utility",
-    usage: "setup",
+    usage: "setup [show|tags|import] [args]",
     aliases: ["config"],
     bot_permisisons: ["SendMessages", "EmbedLinks", "ManageMessages", "AddReactions"],
     required_permissions: ["Administrator"],
@@ -296,8 +372,14 @@ module.exports = {
             return run_setup(client, message, args);
         }
 
-        if (args[0] == 'show') {
-            return await show_current_persona(message.guild?.id ?? "", message, {}, true, true);
+        switch (args[0]) {
+            case 'current':
+            case 'show':
+                return await show_current_persona(message.guild?.id ?? "", message, {}, true, true);
+            case 'tags':
+                return await run_tag_search(client, message, args);
+            case 'import':
+                return await run_import(client, message, args);
         }
 
     }

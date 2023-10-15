@@ -53,18 +53,18 @@ module.exports = {
         const last_story = guild_info.story?.conversation ?? "";
         const persona = guild_info.persona;
 
+        const last_messages = last_story.split("\n\n").length > 20 ? last_story.split("\n\n").slice(-20).join("\n\n") : last_story;
+
 
         const stop_sequence = [`${persona.name}:`, `${message.author.tag}:`, `${persona.name}: `, `${message.author.tag}: `, "\n\n"]
 
-        const prompt = `${persona.personality}\n${persona.dialogue}\n${last_story}\n${message.author.tag}: ${message_content}\n${persona.name}: `;
+        const prompt = `${persona.system_prompt}\n${persona.personality}\n${persona.dialogue}\n${persona.post_history}\n${last_messages}\n${message.author.tag}: ${message_content}\n${persona.name}: `;
 
         generation_config["prompt"] = prompt;
         generation_config["stop_sequence"] = stop_sequence;
         
         await message.channel.sendTyping();
-        console.log(generation_config);
         const response = await fetch_api(guild_info.collab_link, "generate", generation_config);
-
 
         if (response.error)
             return message.reply({embeds : [client.embeds.error("Collab link is invalid, please run the `setup` command")]});

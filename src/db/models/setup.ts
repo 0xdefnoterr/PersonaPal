@@ -1,5 +1,5 @@
 import { Schema, model } from 'mongoose';
-import { Persona, persona_model } from './persona';
+import { Persona, persona_schema } from './persona';
 import { Story, story_schema } from './story';
 
 interface Guild_S {
@@ -25,7 +25,7 @@ const guild_schema = new Schema<Guild_S>({
     collab_link: {type: String, required: true},
     guild_id: {type: String, required: true},
     prefix: {type: String, required: true},
-    persona: {type: persona_model.schema, required: true},
+    persona: {type: persona_schema, required: true},
     story: story_schema,
     created_at: Date,
     updated_at: Date
@@ -34,7 +34,7 @@ const guild_schema = new Schema<Guild_S>({
 const direct_message_schema = new Schema<DirectMessage_S>({
     collab_link: {type: String, required: true},
     user_id: {type: String, required: true},
-    persona: {type: persona_model.schema, required: true},
+    persona: {type: persona_schema, required: true},
     story: {type: story_schema, required: true},
     created_at: Date,
     updated_at: Date

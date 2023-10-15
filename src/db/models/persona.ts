@@ -5,6 +5,8 @@ export interface Persona {
     guild_id: string;
     tags: string[];
     personality: string;
+    post_history: string;
+    system_prompt: string;
     greeting: string;
     dialogue: string;
     avatar_url: string;
@@ -12,12 +14,14 @@ export interface Persona {
 
 const persona_schema = new Schema<Persona>({
     name: {type: String, required: true},
-    guild_id: String,
+    guild_id: {type: String, required: true},
     tags: [String],
-    greeting: String,
-    personality: String,
-    dialogue: String,
-    avatar_url: String
+    greeting: {type: String, required: true},
+    personality: {type: String, required: true},
+    post_history: {type: String, required: true},
+    system_prompt: {type: String, required: true},
+    dialogue: {type: String, required: true},
+    avatar_url: {type: String, required: true}
 });
 
-export const persona_model = model<Persona>('persona', persona_schema);
+export {persona_schema};
