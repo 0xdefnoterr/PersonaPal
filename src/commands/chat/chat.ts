@@ -66,6 +66,8 @@ module.exports = {
         await message.channel.sendTyping();
         const response = await fetch_api(guild_info.collab_link, "generate", generation_config);
 
+        // console.log(prompt, response);
+
         if (response.error)
             return message.reply({embeds : [client.embeds.error("Collab link is invalid, please run the `setup` command")]});
         else if (response.detail) {
@@ -82,9 +84,9 @@ module.exports = {
                     "story.updated_at": new Date()
                 }
             }).then((result) => {
-                console.log(result);
+                // console.log(result);
             }).catch((err) => {
-                console.log(err);
+                // console.log(err);
             })
 
             return message.reply({content: generated_text});

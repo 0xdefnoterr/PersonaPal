@@ -175,7 +175,7 @@ const run_tag_search = async (client: Client, message: Message, args: string[]) 
                     character_whole.data.node.definition.personality = character_whole.data.node.definition.personality.replace("{{char}}", character.name);
                     character_whole.data.node.definition.post_history_instructions = character_whole.data.node.definition.post_history_instructions.replace("{{char}}", character.name);
                     character_whole.data.node.definition.first_message = character_whole.data.node.definition.first_message.replace("{{char}}", character.name);
-                    character_whole.data.node.example_dialogs = character_whole.data.node.definition.example_dialogs.replace("{{char}}", character.name);
+                    character_whole.data.node.definition.example_dialogs = character_whole.data.node.definition.example_dialogs.replace("{{char}}", character.name);
                 } catch (error) {
                     return message.channel.send({embeds: [client.embeds.error("Failed to replace {{char}}")]}); 
                 }
@@ -227,7 +227,7 @@ const run_import = async (client: Client, message: Message, args: string[]) => {
         character.data.node.definition.personality = character.data.node.definition.personality.replace("{{char}}", character.data.node.name);
         character.data.node.definition.post_history_instructions = character.data.node.definition.post_history_instructions.replace("{{char}}", character.data.node.name);
         character.data.node.definition.first_message = character.data.node.definition.first_message.replace("{{char}}", character.data.node.name);
-        character.data.node.example_dialogs = character.data.node.definition.example_dialogs.replace("{{char}}", character.data.node.name);
+        character.data.node.definition.example_dialogs = character.data.node.definition.example_dialogs.replace("{{char}}", character.data.node.name);
     } catch (error) {
         return message.channel.send({embeds: [client.embeds.error("Failed to replace {{char}}")]}); 
     }
