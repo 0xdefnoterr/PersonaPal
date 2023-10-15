@@ -27,18 +27,15 @@ To add the bot to your server, simply follow these steps:
 - `,chat [message]`: Interact with the chosen character, in the specific channel, dms or whole server.
 
 ### Fun Commands
-- `,slap <user>`: Slap another user.
-- `,jokes`: Get a funny joke from your character.
-- `,compliment`: Receive a compliment from your character.
-
-### Customization
-- `,customize`: Customize your character's personality, and more.
+- `,slap <user>`: Slap another user. (In progress)
+- `,jokes`: Get a funny joke from your character. (In progress)
+- `,compliment`: Receive a compliment from your character. (In progress)
 
 ### Utility Commands
 - `,help`: Get information about available commands.
 - `,serverinfo`: Get information about your Discord server.
 - `,userinfo [user]`: Get information about a user.
-- `,setup [global/channel]`: Configure the bot for global or per-channel characters.
+- `,setup [import|tags]`: Configure the character, seek or import a link from chub.ai
 
 ## TODO
 
@@ -46,15 +43,16 @@ Here's an expanded table of tasks that need to be completed for this project:
 
 | Task                            | Status       |
 | ------------------------------- | ------------ |
-| Bot invite link                 | In progress  |
+| Bot invite link                 | FINISHED     |
 | Basic interaction commands      | In progress  |
 | Fun and game commands           | In progress  |
-| Customization features          | Not started  |
-| Utility commands                | Not started  |
+| Voice chat support              | In progress  |
+| Utility commands                | ALMOST       |
 | DM support                      | In progress  |
 | Global/Per-channel character setup | In progress |
 | Documentation and README        | In progress  |
-| Testing and bug fixing          | Not started  |
+| Testing and bug fixing          | In progress  |
+| AI using image generation endpoints | In progress |
 
 Feel free to contribute to the project by picking up any of the tasks above. Contributions are welcome!
 
