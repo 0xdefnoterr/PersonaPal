@@ -1,4 +1,4 @@
-# PersonaPal
+![](https://repository-images.githubusercontent.com/702097277/d601e9d3-335c-4696-b6b6-1066539dc97f)
 --- 
 Welcome to the PersonaPal project! This is going to be a discord bot designed to bring character.ai characters to life in your Discord server. This bot is your perfect companion for spending time in Discord.
 
