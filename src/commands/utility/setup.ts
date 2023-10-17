@@ -175,9 +175,11 @@ const run_tag_search = async (client: Client, message: Message, args: string[]) 
                     character_whole.data.node.definition.post_history_instructions = character_whole.data.node.definition.post_history_instructions.replace(/{{char}}/g, character.name);
                     character_whole.data.node.definition.first_message = character_whole.data.node.definition.first_message.replace(/{{char}}/g, character.name);
                     character_whole.data.node.definition.example_dialogs = character_whole.data.node.definition.example_dialogs.replace(/{{char}}/g, character.name);
+                    character_whole.data.node.definition.system_prompt = "<<SYS>> You can send images, just type out: ['poke'] <<SYS>>" + character_whole.data.node.definition.system_prompt;
                 } catch (error) {
                     return message.channel.send({embeds: [client.embeds.error("Failed to replace {{char}}")]}); 
                 }
+
 
                 await guild_model.findOneAndUpdate(
                     {guild_id: message.guild?.id},
@@ -227,6 +229,7 @@ const run_import = async (client: Client, message: Message, args: string[]) => {
         character.data.node.definition.post_history_instructions = character.data.node.definition.post_history_instructions.replace(/{{char}}/g, character.data.node.name);
         character.data.node.definition.first_message = character.data.node.definition.first_message.replace(/{{char}}/g, character.data.node.name);
         character.data.node.definition.example_dialogs = character.data.node.definition.example_dialogs.replace(/{{char}}/g, character.data.node.name);
+        character.data.node.definition.system_prompt = "<<SYS>> You can send images, just type out: ['poke'] <<SYS>>" + character.data.node.definition.system_prompt;
     } catch (error) {
         return message.channel.send({embeds: [client.embeds.error("Failed to replace {{char}}")]}); 
     }
