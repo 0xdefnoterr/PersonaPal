@@ -3,7 +3,7 @@ import { Command } from "../commands";
 
 module.exports = {
     name: "uptime",
-    description: "Up time of the bto",
+    description: "Up time of the bot",
     category: "utility",
     usage: "uptime",
     aliases: ["up"],
