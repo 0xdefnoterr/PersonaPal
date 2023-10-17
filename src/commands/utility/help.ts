@@ -2,7 +2,13 @@ import { Command } from "../commands";
 import { Client, EmbedBuilder, Message} from "discord.js";
 
 const value_generator = (client:Client, cmd: Command) => {
-    return `\`description:\` ${cmd.description} \n\`usage: ${cmd.usage}\`\n\`cooldown: ${cmd.cooldown ?? client.config.default_cooldown}s\` \n\`aliases: ${cmd.aliases.join(", ")}\``
+    let fields = [
+        `**Description:** ${cmd.description}`,
+        `**Usage:** ${cmd.usage}`,
+        `**Cooldown:** ${cmd.cooldown ?? client.config.default_cooldown}s`,
+        `**Aliases:** ${cmd.aliases.join(", ") ?? "None"}`
+    ];
+    return fields.join("\n");
 }
 
 module.exports = {
@@ -34,12 +40,10 @@ module.exports = {
             return await message.reply({ embeds: [embed] });
         }
 
-        // show 10 first commands then buttons to go to next page or previous page
         let current_page = 1;
         let max_page = Math.ceil(client.commands.size / 10);
 
         const commands = client.commands.map((cmd: Command) => cmd).slice(0, 10);
-
 
         const embed = new EmbedBuilder()
         	.setAuthor({name: client.user?.username ?? "", iconURL: client.user?.avatarURL() ?? undefined})

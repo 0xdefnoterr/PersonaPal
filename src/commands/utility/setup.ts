@@ -354,7 +354,7 @@ const run_setup = async (client: Client, message: Message, args: string[]) => {
 
 module.exports = {
     name: "setup",
-    description: "Use `,setup tags [tags]` to search with tags or not for a character.\n Use `,setup show` to show your current persona.\n Use `,setup import [chub.ai link]` to import a character.",
+    description: "Use `,setup tags [tags]` to search with tags or not for a character.\n import [chub.ai link]` to import a character.",
     category: "utility",
     usage: "setup [show|tags|import] [args]",
     cooldown: 10,
