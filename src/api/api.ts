@@ -16,7 +16,6 @@ const chub_ai = "https://api.chub.ai/search?"
 const chub_ai_character = "https://api.chub.ai/api/characters/"
 const avatar_chub_ai = "https://avatars.charhub.io/avatars/"
 
-// https://api.chub.ai/search?search=&first=1&topics=gentle%20femdom&excludetopics=Loli%2CRape%2CShota&excludetopics=&page=1&sort=star_count&venus=false&min_tokens=50&page=1
 
 const fetch_characters = async (page: number, tags: string[], search: string = "") => {
     const tags_query = tags.join(",");
@@ -63,4 +62,26 @@ const fetch_api = async (base_url: string, endpoint: string, body?: any) => {
     }
 }
 
-export {fetch_api, fetch_characters, fetch_specific_character, get_character_avatar};
+
+const fun_api = {
+    "endpoint": "http://api.nekos.fun:8080/api/",
+    "sfw": {
+        "smug": "smug",
+        "slap": "slap",
+        "feed": "feed",
+        "poke": "poke",
+        "wallpapers": "wallpapers",
+    }
+}
+
+const fun_api_fetch = async (endpoint: string) => {
+    const url = fun_api.endpoint + endpoint;
+    try {
+        const res = await fetch(url);
+        return await res.json();
+    } catch (error) {
+        return {error: error};
+    }
+}
+
+export {fetch_api, fetch_characters, fetch_specific_character, get_character_avatar, fun_api_fetch};

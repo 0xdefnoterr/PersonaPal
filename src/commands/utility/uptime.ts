@@ -8,7 +8,7 @@ module.exports = {
     usage: "uptime",
     aliases: ["up"],
     bot_permisisons: ["SendMessages", "EmbedLinks"],
-    owner_only: true,
+    owner_only: false,
     type: "normal",
     enabled: true,
     run: async (client: Client, message: Message, args: string[]) => {
